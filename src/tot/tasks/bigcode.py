@@ -3,7 +3,7 @@ from tot.tasks.base import Task
 from tot.prompts.swe import *
 from tot.models import gpt, groq
 
-class SWETask(Task):
+class BigCodeTask(Task):
     """
     Input (x)   : a problem statement
     Output (y)  : a code generation
