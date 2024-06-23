@@ -1,13 +1,13 @@
 import argparse
 from tot.methods.bfs import solve
-from tot.tasks.swe import SWETask
+from tot.tasks.swe import BigCodeTask
 from datasets import load_dataset
 import json
 import time
 
 print("Downloading dataset...")
-dataset = load_dataset("princeton-nlp/SWE-bench_Lite", split = "test", cache_dir='datasets_cache')
-preds_path = "llama3-70b-8192.jsonl"
+dataset = load_dataset("bigcode/bigcodebench", split = "v0.1.0_hf", cache_dir='datasets_cache')
+preds_path = "BigCode-llama3-70b-8192.jsonl"
 try:
     with open(preds_path, "r") as file:
         preds_jsonl = file.read()
@@ -18,9 +18,8 @@ def update_jsonl(instance_id, model_patch, model_name_or_path, jsonl_object):
     data = [json.loads(line) for line in jsonl_object.splitlines()]
 
     new_obj = {
-        "instance_id": instance_id,
-        "model_patch": model_patch,
-        "model_name_or_path": model_name_or_path
+        "task_id": instance_id,
+        "solution": model_patch,
     }
 
     data.append(new_obj)
@@ -28,15 +27,14 @@ def update_jsonl(instance_id, model_patch, model_name_or_path, jsonl_object):
 
     return updated_jsonl
 
-def save_jsonl(jsonl_object, file_path="preds.jsonl"):
+def save_jsonl(jsonl_object, file_path):
     with open(file_path, "w") as file:
         file.write(jsonl_object) if jsonl_object.strip() else file.write("")
 
 args = argparse.Namespace(
-    # backend='mixtral-8x7b-32768',
     backend='llama3-70b-8192',
     temperature=0.7, 
-    task='swe', 
+    task='bigcode', 
     naive_run=False,
     prompt_sample='cot', 
     method_generate='sample', 
@@ -47,18 +45,18 @@ args = argparse.Namespace(
     n_select_sample=1)
 
 print("Solving...")
-task = SWETask(dataset)
+task = BigCodeTask(dataset)
 
 
 for index in range(3,4):
-    instance_id = dataset[index]["instance_id"]
-    size = len(dataset[index]["problem_statement"])
+    instance_id = dataset[index]["task_id"]
+    size = len(dataset[index]["instruct_prompt"])
     print(f" ### Task {index} -- {instance_id} -> size ({size} )###")
     ys, infos, _ = solve(args, task, index, to_print=False)
-    preds_jsonl = update_jsonl(dataset[index]["instance_id"], SWETask.parse_diff_block(ys[0]), args.backend, preds_jsonl)
+    preds_jsonl = update_jsonl(dataset[index]["task_id"], BigCodeTask.parse_diff_block(ys[0]), args.backend, preds_jsonl)
     save_jsonl(preds_jsonl, preds_path)
     print("-----------Predicted----------------------")
-    print(SWETask.parse_diff_block(ys[0]))
+    print(BigCodeTask.parse_diff_block(ys[0]))
     print("-----------Expected----------------------")
     print(dataset[index]["patch"])
     # time.sleep(1)
