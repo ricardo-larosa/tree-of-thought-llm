@@ -14,7 +14,7 @@ try:
 except FileNotFoundError:
     preds_jsonl = ""
 
-def update_jsonl(instance_id, model_patch, model_name_or_path, jsonl_object):
+def update_jsonl(instance_id, model_patch, jsonl_object):
     data = [json.loads(line) for line in jsonl_object.splitlines()]
 
     new_obj = {
@@ -36,7 +36,7 @@ args = argparse.Namespace(
     temperature=0.7, 
     task='bigcode', 
     naive_run=False,
-    prompt_sample='cot', 
+    prompt_sample='standard', 
     method_generate='sample', 
     method_evaluate='vote', 
     method_select='greedy', 
@@ -49,15 +49,15 @@ task = BigCodeTask(dataset)
 
 
 for index in range(3,4):
-    instance_id = dataset[index]["task_id"]
+    task_id = dataset[index]["task_id"]
     size = len(dataset[index]["instruct_prompt"])
-    print(f" ### Task {index} -- {instance_id} -> size ({size} )###")
+    print(f" ### Task {index} -- {task_id} -> size ({size} )###")
     ys, infos, _ = solve(args, task, index, to_print=False)
     preds_jsonl = update_jsonl(dataset[index]["task_id"], BigCodeTask.parse_diff_block(ys[0]), args.backend, preds_jsonl)
     save_jsonl(preds_jsonl, preds_path)
-    print("-----------Predicted----------------------")
+    print("-----------Generated----------------------")
     print(BigCodeTask.parse_diff_block(ys[0]))
-    print("-----------Expected----------------------")
-    print(dataset[index]["patch"])
+    print("-----------Canonical_Solution-------------")
+    print(dataset[index]["canonical_solution"])
     # time.sleep(1)
 
