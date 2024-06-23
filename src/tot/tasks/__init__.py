@@ -11,5 +11,8 @@ def get_task(name):
     elif name == 'swe':
         from tot.tasks.swe import SWETask
         return SWETask()
+    elif name == 'bigcode':
+        from tot.tasks.bigcode import BigCodeTask
+        return BigCodeTask()
     else:
         raise NotImplementedError
