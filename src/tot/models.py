@@ -1,6 +1,6 @@
-import os
+import os, time
 import openai
-import backoff 
+import backoff
 
 completion_tokens = prompt_tokens = 0
 
@@ -19,6 +19,9 @@ if api_base != "":
 def completions_with_backoff(**kwargs):
     return openai.ChatCompletion.create(**kwargs)
 
+def completions(**kwargs):
+    return openai.ChatCompletion.create(**kwargs)
+
 def gpt(prompt, model="gpt-4", temperature=0.7, max_tokens=1000, n=1, stop=None) -> list:
     messages = [{"role": "user", "content": prompt}]
     return chatgpt(messages, model=model, temperature=temperature, max_tokens=max_tokens, n=n, stop=stop)
@@ -34,6 +37,7 @@ def chatgpt(messages, model="gpt-4", temperature=0.7, max_tokens=1000, n=1, stop
         # log completion tokens
         completion_tokens += res["usage"]["completion_tokens"]
         prompt_tokens += res["usage"]["prompt_tokens"]
+        time.sleep(2)
     return outputs
     
 def gpt_usage(backend="gpt-4"):
@@ -42,4 +46,28 @@ def gpt_usage(backend="gpt-4"):
         cost = completion_tokens / 1000 * 0.06 + prompt_tokens / 1000 * 0.03
     elif backend == "gpt-3.5-turbo":
         cost = completion_tokens / 1000 * 0.002 + prompt_tokens / 1000 * 0.0015
+    elif backend == "gpt-4-turbo":
+        cost = completion_tokens / 1000 * 0.03 + prompt_tokens / 1000 * 0.01
     return {"completion_tokens": completion_tokens, "prompt_tokens": prompt_tokens, "cost": cost}
+
+def groq(prompt, model="mixtral-8x7b-32768", temperature=0.5, max_tokens=1000, n=1, stop=None) -> list:
+    global completion_tokens, prompt_tokens
+    messages = [{"role": "user", "content": prompt}]
+    return groqgpt(messages, model=model, temperature=temperature, max_tokens=max_tokens, n=n, stop=stop)
+
+def groqgpt(messages, model="mixtral-8x7b-32768", temperature=0.5, max_tokens=1000,n=1, stop=None) -> list:
+    global completion_tokens, prompt_tokens
+    outputs = []
+    while n > 0:
+        n -= 1
+        res = completions(model=model, messages=messages, temperature=temperature, max_tokens=max_tokens, stop=stop)
+        outputs.append(res["choices"][0]["message"]["content"])
+        # log completion tokens
+        completion_tokens += res["usage"]["completion_tokens"]
+        prompt_tokens += res["usage"]["prompt_tokens"]
+        time.sleep(2)
+    return outputs
+
+def groq_usage():
+    global completion_tokens, prompt_tokens
+    return {"completion_tokens": completion_tokens, "prompt_tokens": prompt_tokens}

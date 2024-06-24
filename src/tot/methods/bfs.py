@@ -1,13 +1,23 @@
-import itertools
+import itertools, os, time
 import numpy as np
 from functools import partial
-from tot.models import gpt
+
+api_base = os.getenv("OPENAI_API_BASE", "")
+if api_base == 'https://api.groq.com/openai/v1':
+    from tot.models import groq,groq_usage
+    platform = groq
+    usage = groq_usage
+else:
+    from tot.models import gpt,gpt_usage
+    platform = gpt
+    usage = gpt_usage
+
 
 def get_value(task, x, y, n_evaluate_sample, cache_value=True):
     value_prompt = task.value_prompt_wrap(x, y)
     if cache_value and value_prompt in task.value_cache:
         return task.value_cache[value_prompt]
-    value_outputs = gpt(value_prompt, n=n_evaluate_sample, stop=None)
+    value_outputs = platform(value_prompt, n=n_evaluate_sample, stop=None)
     value = task.value_outputs_unwrap(x, y, value_outputs)
     if cache_value:
         task.value_cache[value_prompt] = value
@@ -27,13 +37,13 @@ def get_values(task, x, ys, n_evaluate_sample, cache_value=True):
 
 def get_votes(task, x, ys, n_evaluate_sample):
     vote_prompt = task.vote_prompt_wrap(x, ys)
-    vote_outputs = gpt(vote_prompt, n=n_evaluate_sample, stop=None)
+    vote_outputs = platform(vote_prompt, n=n_evaluate_sample, stop=None)
     values = task.vote_outputs_unwrap(vote_outputs, len(ys))
     return values
 
 def get_proposals(task, x, y): 
     propose_prompt = task.propose_prompt_wrap(x, y)
-    proposals = gpt(propose_prompt, n=1, stop=None)[0].split('\n')
+    proposals = platform(propose_prompt, n=1, stop=None)[0].split('\n')
     return [y + _ + '\n' for _ in proposals]
 
 def get_samples(task, x, y, n_generate_sample, prompt_sample, stop):
@@ -43,17 +53,18 @@ def get_samples(task, x, y, n_generate_sample, prompt_sample, stop):
         prompt = task.cot_prompt_wrap(x, y)
     else:
         raise ValueError(f'prompt_sample {prompt_sample} not recognized')
-    samples = gpt(prompt, n=n_generate_sample, stop=stop)
+    samples = platform(prompt, n=n_generate_sample, stop=stop)
     return [y + _ for _ in samples]
 
 def solve(args, task, idx, to_print=True):
-    global gpt
-    gpt = partial(gpt, model=args.backend, temperature=args.temperature)
-    print(gpt)
+    global platform
+    platform = partial(platform, model=args.backend, temperature=args.temperature)
+    print(platform)
     x = task.get_input(idx)  # input
     ys = ['']  # current output candidates
     infos = []
     for step in range(task.steps):
+        # print(f"Step {step} - gen")
         # generation
         if args.method_generate == 'sample':
             new_ys = [get_samples(task, x, y, args.n_generate_sample, prompt_sample=args.prompt_sample, stop=task.stops[step]) for y in ys]
@@ -61,12 +72,13 @@ def solve(args, task, idx, to_print=True):
             new_ys = [get_proposals(task, x, y) for y in ys]
         new_ys = list(itertools.chain(*new_ys))
         ids = list(range(len(new_ys)))
+        time.sleep(5)
         # evaluation
+        # print(f"Step {step} - eval")
         if args.method_evaluate == 'vote':
             values = get_votes(task, x, new_ys, args.n_evaluate_sample)
         elif args.method_evaluate == 'value':
             values = get_values(task, x, new_ys, args.n_evaluate_sample)
-
         # selection
         if args.method_select == 'sample':
             ps = np.array(values) / sum(values)
@@ -82,15 +94,19 @@ def solve(args, task, idx, to_print=True):
         
         infos.append({'step': step, 'x': x, 'ys': ys, 'new_ys': new_ys, 'values': values, 'select_new_ys': select_new_ys})
         ys = select_new_ys
+        if step == 0:
+            time.sleep(5)
+
+    total_usage =  usage()
     
     if to_print: 
         print(ys)
-    return ys, {'steps': infos}
+    return ys, {'steps': infos}, total_usage
 
 def naive_solve(args, task, idx, to_print=True):
-    global gpt
-    gpt = partial(gpt, model=args.backend, temperature=args.temperature)
-    print(gpt)
+    global platform
+    platform = partial(platform, model=args.backend, temperature=args.temperature)
+    print(platform)
     x = task.get_input(idx)  # input
     ys = get_samples(task, x, '', args.n_generate_sample, args.prompt_sample, stop=None)
     return ys, {}
