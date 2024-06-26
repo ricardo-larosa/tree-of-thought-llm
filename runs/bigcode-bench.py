@@ -1,6 +1,6 @@
 import argparse
 from tot.methods.bfs import solve
-from tot.tasks.swe import BigCodeTask
+from tot.tasks.bigcode import BigCodeTask
 from datasets import load_dataset
 import json
 import time
@@ -14,7 +14,7 @@ try:
 except FileNotFoundError:
     preds_jsonl = ""
 
-def update_jsonl(instance_id, model_patch, jsonl_object):
+def update_jsonl(instance_id, model_patch, model_name_or_path, jsonl_object):
     data = [json.loads(line) for line in jsonl_object.splitlines()]
 
     new_obj = {
@@ -53,10 +53,10 @@ for index in range(3,4):
     size = len(dataset[index]["instruct_prompt"])
     print(f" ### Task {index} -- {task_id} -> size ({size} )###")
     ys, infos, _ = solve(args, task, index, to_print=False)
-    preds_jsonl = update_jsonl(dataset[index]["task_id"], BigCodeTask.parse_diff_block(ys[0]), args.backend, preds_jsonl)
+    preds_jsonl = update_jsonl(dataset[index]["task_id"], BigCodeTask.parse_code_block(ys[0]), args.backend, preds_jsonl)
     save_jsonl(preds_jsonl, preds_path)
     print("-----------Generated----------------------")
-    print(BigCodeTask.parse_diff_block(ys[0]))
+    print(BigCodeTask.parse_code_block(ys[0]))
     print("-----------Canonical_Solution-------------")
     print(dataset[index]["canonical_solution"])
     # time.sleep(1)
