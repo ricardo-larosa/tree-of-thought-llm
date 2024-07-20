@@ -1,6 +1,6 @@
 import re, os
 from tot.tasks.base import Task
-from tot.prompts.swe import *
+from tot.prompts.bigcode import *
 from tot.models import gpt, groq
 
 class BigCodeTask(Task):

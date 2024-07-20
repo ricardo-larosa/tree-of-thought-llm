@@ -4,6 +4,30 @@ standard_prompt = '''
 
 cot_prompt = '''
 {input}
+
+Important Instruction: Your output must be of the following format:
+
+Plan:
+
+Your plan here.
+
+Code Block:
+
+```
+Your code here.
+```
+
+Example:
+
+Code Block:
+
+```
+    if length < 0:
+        raise ValueError
+    random_string = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase, k=length))
+    char_counts = collections.Counter(random_string)
+    return dict(char_counts)
+```
 '''
 
 

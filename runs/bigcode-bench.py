@@ -7,7 +7,7 @@ import time
 
 print("Downloading dataset...")
 dataset = load_dataset("bigcode/bigcodebench", split = "v0.1.0_hf", cache_dir='datasets_cache')
-preds_path = "BigCode-llama3-70b-8192.jsonl"
+preds_path = "BigCode-Meta-Llama-3-70B-Instruct-Turbo.jsonl"
 try:
     with open(preds_path, "r") as file:
         preds_jsonl = file.read()
@@ -32,11 +32,12 @@ def save_jsonl(jsonl_object, file_path):
         file.write(jsonl_object) if jsonl_object.strip() else file.write("")
 
 args = argparse.Namespace(
-    backend='llama3-70b-8192',
+    # backend='llama3-70b-8192',
+    backend='"meta-llama/Meta-Llama-3-70B-Instruct-Turbo"',# togetherAI
     temperature=0.7, 
     task='bigcode', 
     naive_run=False,
-    prompt_sample='standard', 
+    prompt_sample='cot', 
     method_generate='sample', 
     method_evaluate='vote', 
     method_select='greedy', 
@@ -46,9 +47,10 @@ args = argparse.Namespace(
 
 print("Solving...")
 task = BigCodeTask(dataset)
+print(f"Dataset size: {len(dataset)}")
 
 
-for index in range(3,4):
+for index in range(0, len(dataset)):
     task_id = dataset[index]["task_id"]
     size = len(dataset[index]["instruct_prompt"])
     print(f" ### Task {index} -- {task_id} -> size ({size} )###")
@@ -59,5 +61,5 @@ for index in range(3,4):
     print(BigCodeTask.parse_code_block(ys[0]))
     print("-----------Canonical_Solution-------------")
     print(dataset[index]["canonical_solution"])
-    # time.sleep(1)
+    time.sleep(30)
 
