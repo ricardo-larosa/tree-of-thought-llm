@@ -102,10 +102,10 @@ class BigCodeTask(Task):
             text (str): The large text containing one or more code blocks.
 
         Returns:
-            str: The first block between ``` and ``` if found, otherwise None.
+            str: The first block between ```python and ``` if found, otherwise None.
         """
 
-        start_pattern = r"```"
+        start_pattern = r"```python"
         end_pattern = r"```"
 
         in_code_block = False

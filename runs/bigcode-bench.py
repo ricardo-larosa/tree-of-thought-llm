@@ -7,7 +7,7 @@ import time
 
 print("Downloading dataset...")
 dataset = load_dataset("bigcode/bigcodebench", split = "v0.1.0_hf", cache_dir='datasets_cache')
-preds_path = "BigCode-Meta-Llama-3-70B-Instruct-Turbo.jsonl"
+preds_path = "BigCode-deepseek-llm-67b-chat.jsonl"
 try:
     with open(preds_path, "r") as file:
         preds_jsonl = file.read()
@@ -33,14 +33,14 @@ def save_jsonl(jsonl_object, file_path):
 
 args = argparse.Namespace(
     # backend='llama3-70b-8192',
-    backend='"meta-llama/Meta-Llama-3-70B-Instruct-Turbo"',# togetherAI
+    backend="deepseek-ai/deepseek-llm-67b-chat",# togetherAI
     temperature=0.7, 
-    task='bigcode', 
+    task="bigcode", 
     naive_run=False,
-    prompt_sample='cot', 
-    method_generate='sample', 
-    method_evaluate='vote', 
-    method_select='greedy', 
+    prompt_sample="cot", 
+    method_generate="sample", 
+    method_evaluate="vote", 
+    method_select="greedy", 
     n_generate_sample=5, 
     n_evaluate_sample=5, 
     n_select_sample=1)
@@ -55,11 +55,15 @@ for index in range(0, len(dataset)):
     size = len(dataset[index]["instruct_prompt"])
     print(f" ### Task {index} -- {task_id} -> size ({size} )###")
     ys, infos, _ = solve(args, task, index, to_print=False)
-    preds_jsonl = update_jsonl(dataset[index]["task_id"], BigCodeTask.parse_code_block(ys[0]), args.backend, preds_jsonl)
+    code_block = BigCodeTask.parse_code_block(ys[0])
+    preds_jsonl = update_jsonl(dataset[index]["task_id"], code_block , args.backend, preds_jsonl)
     save_jsonl(preds_jsonl, preds_path)
-    print("-----------Generated----------------------")
-    print(BigCodeTask.parse_code_block(ys[0]))
+    print("-----------LLM_Generated----------------------")
+    print(ys[0])
+    print("-----------Predicted_Solution----------------------")
+    print(code_block)
     print("-----------Canonical_Solution-------------")
     print(dataset[index]["canonical_solution"])
+    print("---------------------------------")
     time.sleep(30)
 

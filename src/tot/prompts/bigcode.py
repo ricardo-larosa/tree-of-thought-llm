@@ -13,21 +13,11 @@ Your plan here.
 
 Code Block:
 
-```
+```python
 Your code here.
 ```
 
-Example:
-
-Code Block:
-
-```
-    if length < 0:
-        raise ValueError
-    random_string = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase, k=length))
-    char_counts = collections.Counter(random_string)
-    return dict(char_counts)
-```
+Do not provide any explanation or context in the code block. Only the code should be present.
 '''
 
 
